@@ -1,0 +1,12 @@
+{
+  "theme": "light",
+  "navbar": true,
+  "menu": true,
+  "hideMenu": false,
+  "menuCollapse": false,
+  "themeColor": "#165DFF",
+  "menuWidth": 200,
+  "globalSettings": false,
+  "device": "desktop",
+  "tabBar": true
+}
