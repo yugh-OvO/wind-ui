@@ -11,7 +11,7 @@
           :style="{ margin: 0, fontSize: '18px' }"
           :heading="5"
         >
-          讲述时光的故事
+          乘风
         </a-typography-title>
         <icon-menu-fold
           v-if="appStore.device === 'mobile'"
