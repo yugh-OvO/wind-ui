@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <a-card class="general-card" title="操作日志">
+    <a-card class="general-card" title="在线用户">
       <a-row>
         <a-col :flex="1">
           <a-form
@@ -12,27 +12,9 @@
           >
             <a-row :gutter="50">
               <a-col :span="8">
-                <a-form-item field="title" label="系统模块">
-                  <a-input
-                    v-model="formModel.title"
-                    placeholder="请输入系统模块"
-                    :allow-clear="true"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="8">
-                <a-form-item field="name" label="操作人员">
-                  <a-input
-                    v-model="formModel.name"
-                    placeholder="请输入操作人员"
-                    :allow-clear="true"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="8">
-                <a-form-item field="operationTimeRange" label="操作时间">
+                <a-form-item field="loginTimeRange" label="登录时间">
                   <a-range-picker
-                    v-model="formModel.operationTimeRange"
+                    v-model="formModel.loginTimeRange"
                     style="width: 100%"
                   />
                 </a-form-item>
@@ -69,43 +51,25 @@
         @page-size-change="onPageSizeChange"
       >
         <template #columns>
-          <a-table-column title="编号" data-index="id" />
-          <a-table-column title="系统模块" data-index="title" />
-          <a-table-column title="操作类型" data-index="operatorType">
-            <template #cell="{ record }">
-              <a-tag :color="typeTag[record.businessType]">{{
-                typeText[record.businessType]
-              }}</a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column title="请求方式" data-index="requestMethod" />
-          <a-table-column title="操作人员" data-index="name" />
+          <a-table-column title="用户名" data-index="username" />
           <a-table-column title="ip" data-index="ip" />
           <a-table-column title="地点" data-index="location" />
-          <a-table-column title="操作时间" data-index="operationTime" />
-          <a-table-column title="状态" data-index="status">
-            <template #cell="{ record }">
-              <span v-if="record.status === 1" class="circle pass" />
-              <span v-else class="circle warn" />
-              {{ record.status === 1 ? '成功' : '失败' }}
-            </template>
-          </a-table-column>
+          <a-table-column title="浏览器" data-index="browser" />
+          <a-table-column title="操作系统" data-index="os" />
+          <a-table-column title="登录时间" data-index="loginTime" />
           <a-table-column title="操作" data-index="operations">
             <template #cell="{ record }">
-              <a-link @click="detail(record.param, record.jsonResult)">
-                详情
-              </a-link>
+              <a-popconfirm
+                content="确定要强制该用户下线吗?"
+                @ok="forceQuit(record.token)"
+              >
+                <a-link>强制下线</a-link>
+              </a-popconfirm>
             </template>
           </a-table-column>
         </template>
       </a-table>
     </a-card>
-    <Detail
-      :json-result="currentJsonResult"
-      :param="currentParam"
-      :visible="detailVisible"
-      @call-back="detailCallBack"
-    />
   </div>
 </template>
 
@@ -113,18 +77,14 @@
   import { ref, reactive } from 'vue';
   import useLoading from '@/hooks/loading';
   import { Pagination } from '@/types/global';
-  import {
-    operationLogList,
-    OperationLogRecord,
-    OperationLogParams,
-  } from '@/api/operation-log';
-  import Detail from './detail.vue';
+  import { Message } from '@arco-design/web-vue';
+  import { onlineList, OnlineRecord, OnlineParams, quit } from '@/api/online';
 
   const generateFormModel = () => {
     return {
       name: '',
       title: '',
-      operationTimeRange: [],
+      loginTimeRange: [],
     };
   };
 
@@ -155,18 +115,15 @@
 
   const detailVisible = ref(false);
   const { loading, setLoading } = useLoading(true);
-  const renderData = ref<OperationLogRecord[]>([]);
+  const renderData = ref<OnlineRecord[]>([]);
   const formModel = ref(generateFormModel());
   const currentParam = ref('');
   const currentJsonResult = ref('');
 
-  const basePagination: Pagination = {
+  const pagination = reactive({
     current: 1,
     pageSize: 20,
-  };
-
-  const pagination = reactive({
-    ...basePagination,
+    total: 0,
     hideOnSinglePage: true,
     showTotal: true,
     showJumper: true,
@@ -174,13 +131,16 @@
   });
 
   const fetchData = async (
-    params: OperationLogParams = { ...pagination, ...formModel.value }
+    params: OnlineParams = {
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+      ...formModel.value,
+    }
   ) => {
     setLoading(true);
     try {
-      const { data } = await operationLogList(params);
+      const { data } = await onlineList(params);
       renderData.value = data.list;
-      pagination.current = params.current;
       pagination.total = data.total;
     } catch (err) {
       // you can report use errorHandler or other
@@ -220,6 +180,12 @@
   };
   const detailCallBack = () => {
     detailVisible.value = false;
+  };
+  const forceQuit = (token: string) => {
+    quit(token).then(() => {
+      Message.success('操作成功');
+      search();
+    });
   };
 </script>
 

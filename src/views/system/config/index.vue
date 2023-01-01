@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <a-card class="general-card" title="角色管理">
+    <a-card class="general-card" title="参数设置">
       <a-row style="margin-bottom: 16px">
         <a-button type="primary" @click="detail(0)">
           <template #icon>
@@ -12,28 +12,32 @@
       <a-table
         row-key="id"
         :loading="loading"
-        :pagination="pagination"
+        :pagination="false"
         :data="renderData"
         :bordered="false"
         @page-change="onPageChange"
         @page-size-change="onPageSizeChange"
       >
         <template #columns>
-          <a-table-column title="编号" data-index="id" />
           <a-table-column title="名称" data-index="name" />
+          <a-table-column title="键名" data-index="code" />
+          <a-table-column title="键值" data-index="value" />
+          <a-table-column title="系统内置参数" data-index="type">
+            <template #cell="{ record }">
+              <span>{{ record.type == 1 ? '是' : '否' }}</span>
+            </template>
+          </a-table-column>
+          <a-table-column title="备注" data-index="remark" />
           <a-table-column title="创建时间" data-index="createTime" />
           <a-table-column title="操作" data-index="operations">
             <template #cell="{ record }">
-              <div v-if="record.id != 1">
-                <a-link @click="detail(record.id)"> 编辑 </a-link>
-                <a-link @click="auth(record.id)"> 设置权限 </a-link>
-                <a-popconfirm
-                  content="确定要删除此角色吗?"
-                  @ok="destroy(record.id)"
-                >
-                  <a-link> 删除 </a-link>
-                </a-popconfirm>
-              </div>
+              <a-link @click="detail(record.id)"> 编辑 </a-link>
+              <a-popconfirm
+                content="确定要删除此用户吗?"
+                @ok="destroy(record.id)"
+              >
+                <a-link> 删除 </a-link>
+              </a-popconfirm>
             </template>
           </a-table-column>
         </template>
@@ -44,12 +48,6 @@
       :visible="detailVisible"
       @call-back="detailCallBack"
     />
-    <Auth
-      :id="currentId"
-      :menu-options="menuOptions"
-      :visible="authVisible"
-      @call-back="authCallBack"
-    />
   </div>
 </template>
 
@@ -58,10 +56,14 @@
   import { Message } from '@arco-design/web-vue';
   import useLoading from '@/hooks/loading';
   import { Pagination } from '@/types/global';
-  import { roleList, RoleRecord, RoleParams, destroyRole } from '@/api/role';
-  import { menuList, MenuRecord } from '@/api/menu';
+  import {
+    configList,
+    ConfigRecord,
+    ConfigParams,
+    changeConfigStatus,
+    destroyConfig,
+  } from '@/api/config';
   import Detail from './detail.vue';
-  import Auth from './auth.vue';
 
   const generateFormModel = () => {
     return {
@@ -71,9 +73,8 @@
 
   const currentId = ref(0);
   const detailVisible = ref(false);
-  const authVisible = ref(false);
   const { loading, setLoading } = useLoading(true);
-  const renderData = ref<RoleRecord[]>([]);
+  const renderData = ref<ConfigRecord[]>([]);
   const formModel = ref(generateFormModel());
 
   const basePagination: Pagination = {
@@ -89,28 +90,15 @@
     showPageSize: true,
   });
 
-  const menuOptions = ref<MenuRecord[]>([]);
-
   const fetchData = async (
-    params: RoleParams = { ...basePagination, ...formModel.value }
+    params: ConfigParams = { ...pagination, ...formModel.value }
   ) => {
     setLoading(true);
     try {
-      const { data } = await roleList(params);
+      const { data } = await configList(params);
       renderData.value = data.list;
-      basePagination.current = params.current;
-      basePagination.total = data.total;
-    } catch (err) {
-      // you can report use errorHandler or other
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMenuList = async () => {
-    try {
-      const { data } = await menuList();
-      menuOptions.value = data;
+      pagination.current = params.current;
+      pagination.total = data.total;
     } catch (err) {
       // you can report use errorHandler or other
     } finally {
@@ -119,40 +107,33 @@
   };
 
   const search = () => {
-    basePagination.current = 1;
+    pagination.current = 1;
     fetchData();
   };
 
   const onPageChange = (current: number) => {
-    basePagination.current = current;
+    pagination.current = current;
     fetchData();
   };
 
   const onPageSizeChange = (pageSize: number) => {
-    basePagination.current = 1;
-    basePagination.pageSize = pageSize;
+    pagination.current = 1;
+    pagination.pageSize = pageSize;
     fetchData();
   };
 
   const reset = () => {
     formModel.value = generateFormModel();
-    basePagination.current = 1;
+    pagination.current = 1;
     search();
   };
 
   fetchData();
-  fetchMenuList();
 
   const detail = (id: number) => {
     currentId.value = id;
     detailVisible.value = true;
   };
-
-  const auth = (id: number) => {
-    currentId.value = id;
-    authVisible.value = true;
-  };
-
   const detailCallBack = (fresh: boolean) => {
     currentId.value = 0;
     detailVisible.value = false;
@@ -160,14 +141,14 @@
       fetchData();
     }
   };
-
-  const authCallBack = () => {
-    currentId.value = 0;
-    authVisible.value = false;
+  const changeStatus = (id: number, status: number) => {
+    changeConfigStatus(id, status).then(() => {
+      Message.success('操作成功');
+      search();
+    });
   };
-
   const destroy = (id: number) => {
-    destroyRole(id).then(() => {
+    destroyConfig(id).then(() => {
       Message.success('删除成功');
       search();
     });

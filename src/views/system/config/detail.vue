@@ -1,9 +1,9 @@
 <template>
   <a-modal
     v-model:visible="visible"
-    title="发放设置"
+    title="成员详情"
     :mask-closable="false"
-    width="600px"
+    width="900px"
     top="15vh"
     :align-center="false"
     :on-before-ok="handleSubmit"
@@ -13,21 +13,35 @@
   >
     <div class="item-container">
       <a-form ref="formRef" auto-label-width :model="formData">
-        <a-form-item
-          field="limit"
-          label="每日发放上限"
-          :rules="[{ required: true, message: '请填写每日发放上限' }]"
-          :validate-trigger="['change', 'input']"
-        >
-          <a-input-number v-model="formData.limit" />
-        </a-form-item>
-        <a-form-item
-          field="probability"
-          label="中奖概率"
-          :rules="[{ required: true, message: '请填写中奖概率' }]"
-          :validate-trigger="['change', 'input']"
-        >
-          <a-input-number v-model="formData.probability" />
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item field="name" label="名称">
+              <a-input v-model="formData.name" placeholder="请填写名称" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item field="code" label="键名">
+              <a-input v-model="formData.code" placeholder="请填写键名" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item field="value" label="键值">
+              <a-input v-model="formData.value" placeholder="请填写键值" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item field="type" label="系统内置">
+              <a-radio-group v-model="formData.type">
+                <a-radio :value="1">是</a-radio>
+                <a-radio :value="2">否</a-radio>
+              </a-radio-group>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-form-item field="remark" label="备注">
+          <a-textarea v-model="formData.remark" placeholder="请填写备注信息" />
         </a-form-item>
       </a-form>
     </div>
@@ -38,15 +52,27 @@
   import { Message } from '@arco-design/web-vue';
   import { ref, unref, reactive, computed } from 'vue';
   import { FormInstance } from '@arco-design/web-vue/es/form';
+  import { generate } from '@vue/compiler-dom';
   import useLoading from '@/hooks/loading';
-  import { prizeInfo, submitConfigure } from '@/api/configure';
+  import { configInfo, submitConfig } from '@/api/config';
 
   const formRef = ref<FormInstance>();
 
   interface Props {
     visible: boolean;
+    id: number;
+    roleOptions: [];
   }
   const props = defineProps<Props>();
+
+  const id = computed({
+    get() {
+      return props.id;
+    },
+    set() {
+      // do nothing
+    },
+  });
 
   const visible = computed({
     get() {
@@ -59,17 +85,20 @@
 
   const { loading, setLoading } = useLoading(true);
 
+  const emit = defineEmits(['callBack']);
+
   const generateForm = () => {
     return {
-      code: null,
-      limit: null,
-      probability: null,
+      id: null,
+      name: '',
+      code: '',
+      value: '',
+      type: null,
+      remark: '',
     };
   };
 
   const formData = reactive(generateForm());
-
-  const emit = defineEmits(['callBack']);
 
   const clearForm = () => {
     Object.assign(formData, generateForm());
@@ -78,14 +107,13 @@
   };
 
   const close = () => {
-    clearForm();
     emit('callBack');
   };
 
   // 获取详情
   const getInfo = () => {
     setLoading(true);
-    prizeInfo()
+    configInfo(id.value)
       .then((rs: any) => {
         Object.assign(formData, rs.data);
       })
@@ -94,13 +122,15 @@
       });
   };
   const open = () => {
-    getInfo();
+    if (id.value) {
+      getInfo();
+    }
   };
   const handleSubmit = async (done: (closed: boolean) => void) => {
     const res = await formRef.value?.validate();
     if (!res) {
       setLoading(true);
-      submitConfigure(formData)
+      submitConfig(id.value, formData)
         .then(() => {
           Message.success('提交成功');
           setTimeout(() => {

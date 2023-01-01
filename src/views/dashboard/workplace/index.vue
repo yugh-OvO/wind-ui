@@ -5,23 +5,6 @@
         <Banner />
         <Statistics />
       </div>
-      <a-grid
-        :cols="24"
-        :col-gap="16"
-        :row-gap="16"
-        style="margin-top: 16px; padding-bottom: 10px"
-      >
-        <a-grid-item
-          :span="{ xs: 24, sm: 24, md: 24, lg: 14, xl: 14, xxl: 14 }"
-        >
-          <Rank />
-        </a-grid-item>
-        <a-grid-item
-          :span="{ xs: 24, sm: 24, md: 24, lg: 10, xl: 10, xxl: 10 }"
-        >
-          <Strategy />
-        </a-grid-item>
-      </a-grid>
     </div>
   </div>
 </template>
@@ -29,8 +12,6 @@
 <script lang="ts" setup>
   import Banner from './components/banner.vue';
   import Statistics from './components/statistics.vue';
-  import Rank from './components/rank.vue';
-  import Strategy from './components/strategy.vue';
 </script>
 
 <script lang="ts">

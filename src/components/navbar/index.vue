@@ -22,28 +22,6 @@
     </div>
     <ul class="right-side">
       <li>
-        <a-tooltip content="点击设置奖品发放参数">
-          <a-button
-            class="nav-btn"
-            type="outline"
-            :shape="'circle'"
-            @click="setting"
-          >
-            <icon-settings />
-          </a-button>
-        </a-tooltip>
-      </li>
-      <li>
-        <a-popover title="扫码体验游戏">
-          <a-button class="nav-btn" type="outline" :shape="'circle'">
-            <icon-qrcode />
-          </a-button>
-          <template #content>
-            <img :src="code" style="width: 150px" />
-          </template>
-        </a-popover>
-      </li>
-      <li>
         <a-tooltip
           :content="
             theme === 'light' ? '点击切换为暗黑模式' : '点击切换为亮色模式'
@@ -93,6 +71,12 @@
           </a-avatar>
           <template #content>
             <a-doption>
+              <a-space @click="profile">
+                <icon-user />
+                <span> 个人信息 </span>
+              </a-space>
+            </a-doption>
+            <a-doption>
               <a-space @click="password">
                 <icon-lock />
                 <span> 修改密码 </span>
@@ -110,7 +94,6 @@
     </ul>
   </div>
   <Password :visible="passwordVisible" @call-back="passwordCallBack" />
-  <Setting :visible="settingVisible" @call-back="settingCallBack" />
 </template>
 
 <script lang="ts" setup>
@@ -118,9 +101,10 @@
   import { useDark, useToggle, useFullscreen } from '@vueuse/core';
   import { useAppStore, useUserStore } from '@/store';
   import useUser from '@/hooks/user';
+  import { useRouter } from 'vue-router';
   import Password from './password.vue';
-  import Setting from './setting.vue';
 
+  const router = useRouter();
   const appStore = useAppStore();
   const userStore = useUserStore();
   const { logout } = useUser();
@@ -130,7 +114,6 @@
       ? userStore.avatar
       : 'https://horsevision.oss-cn-hangzhou.aliyuncs.com/yhc/avatar.webp';
   });
-  const code = 'https://horsevision.oss-cn-hangzhou.aliyuncs.com/yhc/code.png';
   const theme = computed(() => {
     return appStore.theme;
   });
@@ -151,7 +134,6 @@
   };
   const refBtn = ref();
   const triggerBtn = ref();
-  const settingVisible = ref(false);
   const handleLogout = () => {
     logout();
   };
@@ -163,11 +145,8 @@
   const password = () => {
     passwordVisible.value = true;
   };
-  const setting = () => {
-    settingVisible.value = true;
-  };
-  const settingCallBack = () => {
-    settingVisible.value = false;
+  const profile = () => {
+    router.push('/profile/list');
   };
 </script>
 
